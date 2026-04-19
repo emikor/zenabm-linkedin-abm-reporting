@@ -14,6 +14,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 ENV_FILE="${PLUGIN_ROOT}/.env"
+VENV_DIR="${PLUGIN_ROOT}/.venv"
+REQUIREMENTS_FILE="${PLUGIN_ROOT}/requirements.txt"
 BASE_URL="${ZENABM_BASE_URL:-https://app.zenabm.com/api/v1}"
 
 # ── Colours ────────────────────────────────────────────────────────────────
@@ -30,6 +32,54 @@ print_header() {
   echo -e "${CYAN}${BOLD}║     LinkedIn ABM Reporter — Setup Wizard     ║${NC}"
   echo -e "${CYAN}${BOLD}╚══════════════════════════════════════════════╝${NC}"
   echo ""
+}
+
+# ── Create virtualenv + install deps ───────────────────────────────────────
+# We always use a local .venv so we work on PEP-668-protected systems
+# (Homebrew Python, Debian/Ubuntu, etc.) without needing --break-system-packages.
+ensure_venv() {
+  # Pick a Python interpreter
+  local py=""
+  for candidate in python3 python; do
+    if command -v "${candidate}" >/dev/null 2>&1; then
+      py="${candidate}"
+      break
+    fi
+  done
+  if [[ -z "${py}" ]]; then
+    echo -e "${RED}[ERROR] No python3/python found on PATH.${NC}"
+    echo "    Install Python 3.9+ from https://www.python.org/downloads/ and rerun."
+    exit 1
+  fi
+
+  if [[ ! -x "${VENV_DIR}/bin/python" ]]; then
+    echo -e "Creating virtualenv at ${VENV_DIR}..."
+    if ! "${py}" -m venv "${VENV_DIR}" 2>/tmp/zenabm_venv_err; then
+      echo -e "${RED}[ERROR] Failed to create virtualenv.${NC}"
+      echo "    If you're on Debian/Ubuntu you may need: sudo apt-get install python3-venv"
+      echo "    Details:"
+      sed 's/^/    /' /tmp/zenabm_venv_err
+      rm -f /tmp/zenabm_venv_err
+      exit 1
+    fi
+    rm -f /tmp/zenabm_venv_err
+    echo -e "${GREEN}[OK] Virtualenv created.${NC}"
+  else
+    echo -e "${GREEN}[OK] Existing virtualenv detected at ${VENV_DIR}.${NC}"
+  fi
+
+  # Install dependencies into the venv
+  echo -e "Installing Python dependencies..."
+  if ! "${VENV_DIR}/bin/python" -m pip install --disable-pip-version-check --quiet --upgrade pip; then
+    echo -e "${YELLOW}[WARN] Could not upgrade pip inside the venv, continuing anyway.${NC}"
+  fi
+  if ! "${VENV_DIR}/bin/python" -m pip install --disable-pip-version-check --quiet -r "${REQUIREMENTS_FILE}"; then
+    echo -e "${RED}[ERROR] Failed to install dependencies from ${REQUIREMENTS_FILE}.${NC}"
+    echo "    Re-run with verbose output to debug:"
+    echo "      ${VENV_DIR}/bin/python -m pip install -r ${REQUIREMENTS_FILE}"
+    exit 1
+  fi
+  echo -e "${GREEN}[OK] Dependencies installed into .venv.${NC}"
 }
 
 # ── Check for existing .env ────────────────────────────────────────────────
@@ -128,13 +178,10 @@ print_next_steps() {
   echo ""
   echo -e "${CYAN}${BOLD}Setup complete! Here's what to do next:${NC}"
   echo ""
-  echo "  1. Install Python dependencies:"
-  echo "     pip install -r ${PLUGIN_ROOT}/requirements.txt"
+  echo "  1. Test the CLI:"
+  echo "     ${VENV_DIR}/bin/python ${PLUGIN_ROOT}/scripts/query_zenabm.py get_overview '{\"start\":\"$(date -d '7 days ago' +%Y-%m-%d 2>/dev/null || date -v-7d +%Y-%m-%d)\",\"end\":\"$(date +%Y-%m-%d)\"}'"
   echo ""
-  echo "  2. Test the CLI:"
-  echo "     python ${PLUGIN_ROOT}/scripts/query_zenabm.py get_overview '{\"start\":\"$(date -d '7 days ago' +%Y-%m-%d 2>/dev/null || date -v-7d +%Y-%m-%d)\",\"end\":\"$(date +%Y-%m-%d)\"}'"
-  echo ""
-  echo "  3. Generate an ABM report in Claude Code:"
+  echo "  2. Generate an ABM report in Claude Code:"
   echo "     /abm-report"
   echo "     (or ask: 'Give me last week's LinkedIn ABM report')"
   echo ""
@@ -144,6 +191,7 @@ print_next_steps() {
 
 # ── Main ───────────────────────────────────────────────────────────────────
 print_header
+ensure_venv
 check_existing_env
 prompt_token
 test_token

@@ -58,51 +58,55 @@ A Claude Code plugin that generates comprehensive LinkedIn ABM performance repor
 
 ## Installation
 
-In Claude Code, run this one command:
+Clone the repo and run the setup wizard — that's it. The wizard creates an isolated Python virtualenv (so PEP-668-protected systems like Homebrew Python or Debian/Ubuntu just work), installs the dependencies, and prompts for your ZenABM API token.
 
-```
-/plugin marketplace add emikor/zenabm-linkedin-abm-reporting
+```bash
+git clone https://github.com/emikor/zenabm-linkedin-abm-reporting.git ~/zenabm-linkedin-abm-reporting
+bash ~/zenabm-linkedin-abm-reporting/scripts/setup.sh
 ```
 
-Claude Code will fetch the marketplace and prompt you to install `linkedin-abm-reporter` — confirm and you're done.
+The wizard will:
+1. Create `.venv/` inside the plugin and install all Python dependencies into it
+2. Prompt for your ZenABM API token (find it in ZenABM → Settings → API)
+3. Test the token against the live API
+4. Write a `.env` file to the plugin root (gitignored)
+5. Print next steps
+
+### Making the skill discoverable in Claude Code
+
+Once cloned, tell Claude Code where the plugin lives by adding the `skills/` directory to your settings. From the repo root, run:
+
+```bash
+mkdir -p ~/.claude
+python3 - <<'PY'
+import json, os, pathlib
+settings = pathlib.Path.home() / ".claude" / "settings.json"
+plugin_root = pathlib.Path("~/zenabm-linkedin-abm-reporting").expanduser().resolve()
+data = json.loads(settings.read_text()) if settings.exists() else {}
+extra = data.setdefault("additionalDirectories", [])
+if str(plugin_root) not in extra:
+    extra.append(str(plugin_root))
+settings.write_text(json.dumps(data, indent=2))
+print(f"Added {plugin_root} to {settings}")
+PY
+```
+
+Then restart Claude Code. The `abm-report` skill will now be available.
 
 <details>
-<summary>Manual / explicit install (two commands)</summary>
+<summary>Alternative: Claude Code <code>/plugin marketplace add</code> (requires a recent Claude Code build)</summary>
+
+If your Claude Code version recognizes the `/plugin` command (you can verify by running `/plugin` alone — it should open a menu, **not** return "Unknown skill: plugin"), you can install via the marketplace system:
 
 ```
 /plugin marketplace add emikor/zenabm-linkedin-abm-reporting
 /plugin install linkedin-abm-reporter@zenabm-linkedin-abm-reporting
 ```
 
-Or from the shell:
+You **still need to run `scripts/setup.sh` once** after installing, to create the venv and configure your API token. Claude Code will tell you the plugin's install path; `cd` into it and run `bash scripts/setup.sh`.
 
-```bash
-claude plugin marketplace add emikor/zenabm-linkedin-abm-reporting
-claude plugin install linkedin-abm-reporter@zenabm-linkedin-abm-reporting
-```
+If `/plugin` returns "Unknown skill: plugin", use the git-clone flow above — it works on every Claude Code version.
 </details>
-
----
-
-## Setup (First Time)
-
-Run the setup wizard to configure your ZenABM API token:
-
-```bash
-bash ~/linkedin-abm-reporter/scripts/setup.sh
-```
-
-The wizard will:
-1. Prompt for your ZenABM API token (find it in ZenABM → Settings → API)
-2. Test the token against the live API
-3. Write a `.env` file to the plugin root
-4. Print next steps
-
-Then install Python dependencies:
-
-```bash
-pip install -r ~/linkedin-abm-reporter/requirements.txt
-```
 
 ---
 
@@ -251,13 +255,22 @@ ZenABM uses inclusive date ranges. The range `2024-04-07_2024-04-13` includes da
 ## Troubleshooting
 
 ### "ZENABM_API_TOKEN is not set"
-Run the setup wizard: `bash ~/linkedin-abm-reporter/scripts/setup.sh`
+Run the setup wizard: `bash ~/zenabm-linkedin-abm-reporting/scripts/setup.sh`
 
 ### "HTTP 401 / 403" errors
 Your token may be expired or incorrect. Re-run `setup.sh` to enter a new token.
 
+### "No such file or directory: .venv/bin/python"
+The setup wizard hasn't been run yet (or the `.venv` was deleted). Run it: `bash ~/zenabm-linkedin-abm-reporting/scripts/setup.sh`. The wizard is idempotent — it will re-create the venv and reinstall deps without touching your existing `.env`.
+
+### "error: externally-managed-environment" (PEP-668)
+You should never see this — the wizard installs into an isolated `.venv` inside the plugin directory. If you see it, you're running `pip install` against your system Python by hand; use `~/zenabm-linkedin-abm-reporting/.venv/bin/pip` instead, or just re-run `setup.sh`.
+
 ### "module not found" errors
-Install dependencies: `pip install -r ~/linkedin-abm-reporter/requirements.txt`
+Re-run the setup wizard to rebuild the venv: `bash ~/zenabm-linkedin-abm-reporting/scripts/setup.sh`. If you really need to add packages manually, use the venv's pip: `~/zenabm-linkedin-abm-reporting/.venv/bin/pip install <package>`.
+
+### Claude Code says "Unknown skill: plugin"
+Your Claude Code build doesn't support the `/plugin` command — use the git-clone install flow in the **Installation** section instead.
 
 ### PDF export fails
 WeasyPrint requires system libraries on some platforms:

@@ -18,12 +18,19 @@ You are a LinkedIn ABM reporting assistant powered by ZenABM data. When this ski
 Before anything else, verify the ZenABM connection is working. Run a quick test using TODAY's date minus 7 days:
 
 ```bash
-python ${CLAUDE_PLUGIN_ROOT}/scripts/query_zenabm.py get_overview '{"start":"YYYY-MM-DD","end":"YYYY-MM-DD"}'
+${CLAUDE_PLUGIN_ROOT}/.venv/bin/python ${CLAUDE_PLUGIN_ROOT}/scripts/query_zenabm.py get_overview '{"start":"YYYY-MM-DD","end":"YYYY-MM-DD"}'
 ```
 
 Replace the dates with the last 7 calendar days. If the output contains `costInUsd` data, setup is good. Continue to Step 1.
 
-**If you see an error about a missing token**, tell the user:
+**If you see `No such file or directory` pointing at `.venv/bin/python`**, the setup wizard has not been run yet. Tell the user:
+> "The plugin's virtualenv hasn't been created yet. Please run the setup wizard:
+> ```
+> bash ${CLAUDE_PLUGIN_ROOT}/scripts/setup.sh
+> ```
+> This creates a local `.venv`, installs dependencies, and configures your ZenABM API token. Then try again."
+
+**If you see an error about a missing or invalid token**, tell the user:
 > "Your ZenABM API token is not configured. Please run the setup wizard:
 > ```
 > bash ${CLAUDE_PLUGIN_ROOT}/scripts/setup.sh
@@ -67,64 +74,64 @@ Store as variables:
 
 Run each query and store results. All commands follow the pattern:
 ```bash
-python ${CLAUDE_PLUGIN_ROOT}/scripts/query_zenabm.py <function> '<json_args>'
+${CLAUDE_PLUGIN_ROOT}/.venv/bin/python ${CLAUDE_PLUGIN_ROOT}/scripts/query_zenabm.py <function> '<json_args>'
 ```
 
 ### 2a. Headline metrics with period comparison
 ```bash
-python ${CLAUDE_PLUGIN_ROOT}/scripts/query_zenabm.py get_wow_metrics \
+${CLAUDE_PLUGIN_ROOT}/.venv/bin/python ${CLAUDE_PLUGIN_ROOT}/scripts/query_zenabm.py get_wow_metrics \
   '{"current_start":"CURRENT_START","current_end":"CURRENT_END","prev_start":"PREV_START","prev_end":"PREV_END"}'
 ```
 Gives you: current metrics, previous metrics, and % changes for spend, impressions, clicks, engagements, CTR, CPC, CPM, engagement_rate.
 
 ### 2b. Deals with attribution
 ```bash
-python ${CLAUDE_PLUGIN_ROOT}/scripts/query_zenabm.py get_deals \
+${CLAUDE_PLUGIN_ROOT}/.venv/bin/python ${CLAUDE_PLUGIN_ROOT}/scripts/query_zenabm.py get_deals \
   '{"start":"CURRENT_START","end":"CURRENT_END"}'
 ```
 
 ### 2c. Campaign groups
 ```bash
-python ${CLAUDE_PLUGIN_ROOT}/scripts/query_zenabm.py get_campaign_groups \
+${CLAUDE_PLUGIN_ROOT}/.venv/bin/python ${CLAUDE_PLUGIN_ROOT}/scripts/query_zenabm.py get_campaign_groups \
   '{"start":"CURRENT_START","end":"CURRENT_END"}'
 ```
 
 ### 2d. Ad format breakdown
 ```bash
-python ${CLAUDE_PLUGIN_ROOT}/scripts/query_zenabm.py get_format_summary \
+${CLAUDE_PLUGIN_ROOT}/.venv/bin/python ${CLAUDE_PLUGIN_ROOT}/scripts/query_zenabm.py get_format_summary \
   '{"start":"CURRENT_START","end":"CURRENT_END"}'
 ```
 This auto-detects format from campaign names and aggregates by format.
 
 ### 2e. Top engaged companies (sorted by clicks, top 15)
 ```bash
-python ${CLAUDE_PLUGIN_ROOT}/scripts/query_zenabm.py get_companies \
+${CLAUDE_PLUGIN_ROOT}/.venv/bin/python ${CLAUDE_PLUGIN_ROOT}/scripts/query_zenabm.py get_companies \
   '{"start":"CURRENT_START","end":"CURRENT_END","sort_by":"clicks","limit":15}'
 ```
 
 ### 2f. ABM stage moves
 First get all stages:
 ```bash
-python ${CLAUDE_PLUGIN_ROOT}/scripts/query_zenabm.py get_abm_stages '{}'
+${CLAUDE_PLUGIN_ROOT}/.venv/bin/python ${CLAUDE_PLUGIN_ROOT}/scripts/query_zenabm.py get_abm_stages '{}'
 ```
 Then for each stage that represents "Interested" or "Considering" (look at stage names from the result), fetch companies entering that stage:
 ```bash
-python ${CLAUDE_PLUGIN_ROOT}/scripts/query_zenabm.py get_companies_entering_stage \
+${CLAUDE_PLUGIN_ROOT}/.venv/bin/python ${CLAUDE_PLUGIN_ROOT}/scripts/query_zenabm.py get_companies_entering_stage \
   '{"stage_id":"STAGE_ID","start":"CURRENT_START","end":"CURRENT_END"}'
 ```
 
 ### 2g. Impression hogs (red flag detection)
 ```bash
-python ${CLAUDE_PLUGIN_ROOT}/scripts/query_zenabm.py get_impression_hogs \
+${CLAUDE_PLUGIN_ROOT}/.venv/bin/python ${CLAUDE_PLUGIN_ROOT}/scripts/query_zenabm.py get_impression_hogs \
   '{"start":"CURRENT_START","end":"CURRENT_END","threshold_multiplier":5}'
 ```
 
 ### 2h. (Quarterly/Annual only) — Ad spend trend and job title personas
 ```bash
-python ${CLAUDE_PLUGIN_ROOT}/scripts/query_zenabm.py get_ad_spend \
+${CLAUDE_PLUGIN_ROOT}/.venv/bin/python ${CLAUDE_PLUGIN_ROOT}/scripts/query_zenabm.py get_ad_spend \
   '{"start":"CURRENT_START","end":"CURRENT_END"}'
 
-python ${CLAUDE_PLUGIN_ROOT}/scripts/query_zenabm.py get_job_titles \
+${CLAUDE_PLUGIN_ROOT}/.venv/bin/python ${CLAUDE_PLUGIN_ROOT}/scripts/query_zenabm.py get_job_titles \
   '{"start":"CURRENT_START","end":"CURRENT_END","limit":15}'
 ```
 
@@ -343,7 +350,7 @@ If the user says yes:
    ```
 2. Run the export script:
    ```bash
-   python ${CLAUDE_PLUGIN_ROOT}/scripts/export_pdf.py /tmp/abm-report-CURRENT_START-CURRENT_END.md
+   ${CLAUDE_PLUGIN_ROOT}/.venv/bin/python ${CLAUDE_PLUGIN_ROOT}/scripts/export_pdf.py /tmp/abm-report-CURRENT_START-CURRENT_END.md
    ```
 3. The PDF will be saved alongside the .md file. Tell the user the full path.
 
