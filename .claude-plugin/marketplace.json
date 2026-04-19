@@ -1,0 +1,22 @@
+{
+  "name": "zenabm-linkedin-abm-reporting",
+  "owner": {
+    "name": "ZenABM"
+  },
+  "metadata": {
+    "description": "ZenABM plugins for Claude Code"
+  },
+  "plugins": [
+    {
+      "name": "linkedin-abm-reporter",
+      "source": "./",
+      "description": "Generate LinkedIn ABM performance reports from ZenABM — weekly, monthly, quarterly, or annual. Pipeline ROI, deal attribution, campaign trends, company engagement analysis, and PDF export.",
+      "version": "1.0.0",
+      "author": {
+        "name": "ZenABM"
+      },
+      "homepage": "https://github.com/emikor/zenabm-linkedin-abm-reporting",
+      "repository": "https://github.com/emikor/zenabm-linkedin-abm-reporting"
+    }
+  ]
+}

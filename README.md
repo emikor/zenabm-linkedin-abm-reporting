@@ -58,20 +58,20 @@ A Claude Code plugin that generates comprehensive LinkedIn ABM performance repor
 
 ## Installation
 
-### Step 1: Clone or copy the plugin
+In Claude Code, run:
 
-```bash
-git clone <repo-url> ~/linkedin-abm-reporter
-# or: cp -r /path/to/linkedin-abm-reporter ~/linkedin-abm-reporter
 ```
-
-### Step 2: Install the plugin in Claude Code
-
-```bash
-claude plugin install ~/linkedin-abm-reporter
+/plugin marketplace add emikor/zenabm-linkedin-abm-reporting
+/plugin install linkedin-abm-reporter@zenabm-linkedin-abm-reporting
 ```
 
 That's it. Claude will now have access to the `abm-report` skill.
+
+> Prefer the CLI? The same works non-interactively:
+> ```bash
+> claude plugin marketplace add emikor/zenabm-linkedin-abm-reporting
+> claude plugin install linkedin-abm-reporter@zenabm-linkedin-abm-reporting
+> ```
 
 ---
 
