@@ -58,54 +58,38 @@ A Claude Code plugin that generates comprehensive LinkedIn ABM performance repor
 
 ## Installation
 
-Clone the repo and run the setup wizard — that's it. The wizard creates an isolated Python virtualenv (so PEP-668-protected systems like Homebrew Python or Debian/Ubuntu just work), installs the dependencies, and prompts for your ZenABM API token.
+1. Install [Claude Code](https://claude.ai/download)
+2. Open Claude Code
+3. Paste this: **"Install this plugin: https://github.com/emikor/zenabm-linkedin-abm-reporting"**
+4. Claude clones the repo, creates a local Python virtualenv, installs the dependencies, and asks you for your ZenABM API token. That's the entire setup.
+5. Type `/abm-report` or ask *"Give me last week's LinkedIn ABM report"* to generate a report.
 
+When Claude asks for your API token, paste it from **https://app.zenabm.com/api-keys** (log in → create a new key if you don't already have one → copy the token).
+
+Your token is validated against the live API, then saved locally to `.env` (chmod 600, gitignored). It never leaves your machine.
+
+<details>
+<summary>Alternative install methods</summary>
+
+**Git clone + run wizard:**
 ```bash
 git clone https://github.com/emikor/zenabm-linkedin-abm-reporting.git ~/zenabm-linkedin-abm-reporting
 bash ~/zenabm-linkedin-abm-reporting/scripts/setup.sh
 ```
 
-The wizard will:
-1. Create `.venv/` inside the plugin and install all Python dependencies into it
-2. Prompt for your ZenABM API token (find it in ZenABM → Settings → API)
-3. Test the token against the live API
-4. Write a `.env` file to the plugin root (gitignored)
-5. Print next steps
-
-### Making the skill discoverable in Claude Code
-
-Once cloned, tell Claude Code where the plugin lives by adding the `skills/` directory to your settings. From the repo root, run:
-
-```bash
-mkdir -p ~/.claude
-python3 - <<'PY'
-import json, os, pathlib
-settings = pathlib.Path.home() / ".claude" / "settings.json"
-plugin_root = pathlib.Path("~/zenabm-linkedin-abm-reporting").expanduser().resolve()
-data = json.loads(settings.read_text()) if settings.exists() else {}
-extra = data.setdefault("additionalDirectories", [])
-if str(plugin_root) not in extra:
-    extra.append(str(plugin_root))
-settings.write_text(json.dumps(data, indent=2))
-print(f"Added {plugin_root} to {settings}")
-PY
-```
-
-Then restart Claude Code. The `abm-report` skill will now be available.
-
-<details>
-<summary>Alternative: Claude Code <code>/plugin marketplace add</code> (requires a recent Claude Code build)</summary>
-
-If your Claude Code version recognizes the `/plugin` command (you can verify by running `/plugin` alone — it should open a menu, **not** return "Unknown skill: plugin"), you can install via the marketplace system:
-
+**Claude Code plugin marketplace** (requires a Claude Code build with `/plugin`):
 ```
 /plugin marketplace add emikor/zenabm-linkedin-abm-reporting
 /plugin install linkedin-abm-reporter@zenabm-linkedin-abm-reporting
 ```
+The first time you run `/abm-report`, the skill will create the venv and prompt for your ZenABM API token automatically.
 
-You **still need to run `scripts/setup.sh` once** after installing, to create the venv and configure your API token. Claude Code will tell you the plugin's install path; `cd` into it and run `bash scripts/setup.sh`.
+**macOS PDF export note:** PDF export uses WeasyPrint, which needs Pango on macOS:
+```bash
+brew install pango
+```
+Reports generate fine without it — you only need this if you want PDF export.
 
-If `/plugin` returns "Unknown skill: plugin", use the git-clone flow above — it works on every Claude Code version.
 </details>
 
 ---

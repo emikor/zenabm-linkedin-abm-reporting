@@ -15,29 +15,63 @@ You are a LinkedIn ABM reporting assistant powered by ZenABM data. When this ski
 
 ## STEP 0 — Setup Check
 
-Before anything else, verify the ZenABM connection is working. Run a quick test using TODAY's date minus 7 days:
+Before anything else, verify setup. Two checks, in this order.
+
+### 0a. Virtualenv exists
+
+If `${CLAUDE_PLUGIN_ROOT}/.venv/bin/python` is missing, create it and install dependencies silently (do NOT ask the user to do this manually):
+
+```bash
+python3 -m venv "${CLAUDE_PLUGIN_ROOT}/.venv" && \
+  "${CLAUDE_PLUGIN_ROOT}/.venv/bin/pip" install -q -r "${CLAUDE_PLUGIN_ROOT}/requirements.txt"
+```
+
+If the install fails because of a missing system library (e.g. Pango on macOS for WeasyPrint), note it but continue — reports still work; only PDF export is affected.
+
+### 0b. ZenABM API token is configured
+
+Run a quick test against the last 7 days:
 
 ```bash
 ${CLAUDE_PLUGIN_ROOT}/.venv/bin/python ${CLAUDE_PLUGIN_ROOT}/scripts/query_zenabm.py get_overview '{"start":"YYYY-MM-DD","end":"YYYY-MM-DD"}'
 ```
 
-Replace the dates with the last 7 calendar days. If the output contains `costInUsd` data, setup is good. Continue to Step 1.
+If the output contains `costInUsd` data, setup is good — continue to Step 1.
 
-**If you see `No such file or directory` pointing at `.venv/bin/python`**, the setup wizard has not been run yet. Tell the user:
-> "The plugin's virtualenv hasn't been created yet. Please run the setup wizard:
-> ```
-> bash ${CLAUDE_PLUGIN_ROOT}/scripts/setup.sh
-> ```
-> This creates a local `.venv`, installs dependencies, and configures your ZenABM API token. Then try again."
+**If the token is missing or invalid (401/403, or `ZENABM_API_TOKEN is not set`):**
 
-**If you see an error about a missing or invalid token**, tell the user:
-> "Your ZenABM API token is not configured. Please run the setup wizard:
-> ```
-> bash ${CLAUDE_PLUGIN_ROOT}/scripts/setup.sh
-> ```
-> Then try again."
+Prompt the user inline — do NOT send them to a shell script. Ask conversationally:
 
-Do NOT proceed until setup is confirmed working.
+> "I need your ZenABM API token to pull LinkedIn data.
+>
+> **Where to get it:** https://app.zenabm.com/api-keys — log in, create a new key if you don't have one, and copy the token.
+>
+> Paste it here when ready."
+
+When they paste a token:
+
+1. **Validate** by calling the API with their token:
+   ```bash
+   curl -s -o /tmp/zenabm_test.json -w "%{http_code}" \
+     -H "Authorization: Bearer <TOKEN>" \
+     -H "Accept: application/json" \
+     "https://app.zenabm.com/api/v1/linkedin-metrics?startDate=<7_DAYS_AGO>&endDate=<TODAY>"
+   ```
+   - HTTP 200 → valid, continue.
+   - HTTP 401/403 → tell them the token was rejected and ask for a fresh one from https://app.zenabm.com/api-keys.
+
+2. **Write `.env`** (at plugin root, chmod 600):
+   ```bash
+   cat > "${CLAUDE_PLUGIN_ROOT}/.env" <<EOF
+   ZENABM_API_TOKEN=<TOKEN>
+   ZENABM_BASE_URL=https://app.zenabm.com/api/v1
+   EOF
+   chmod 600 "${CLAUDE_PLUGIN_ROOT}/.env"
+   ```
+
+3. Confirm to the user: "Saved. Your token is stored locally in `.env` (chmod 600, gitignored)."
+
+Then rerun the overview test to confirm, and only proceed to Step 1 once it returns data.
 
 ---
 

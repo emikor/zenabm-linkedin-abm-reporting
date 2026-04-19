@@ -101,7 +101,8 @@ check_existing_env() {
 # ── Prompt for token ───────────────────────────────────────────────────────
 prompt_token() {
   echo -e "${BOLD}Where to find your ZenABM API token:${NC}"
-  echo "  Log in to ZenABM → Settings → API → copy your Bearer token"
+  echo "  Go to https://app.zenabm.com/api-keys"
+  echo "  Log in, create a new key if you don't have one, and copy the token."
   echo ""
   read -rsp "Enter your ZenABM API token: " TOKEN
   echo ""
